@@ -14,7 +14,7 @@
 
 filename:="idleking.txt" ; File to write
 saveTimeout:=1 ; Write file every n seconds 
-idleLimit:=10 ; Number of before considered idle
+idleLimit:=300 ; Number of before considered idle
 uiIsVisible:=1 ; 0=Start invisible, 1=start visible
 uiIsCentered:=0 ; 0=use lower right, 1=centered
 uiIsAlwaysOnTop:=0 ; Makes the window topmost
@@ -33,7 +33,7 @@ Menu, Tray, Tip, IdleKing - A Simple Time Tracker`nPress numlock to see details
 idleMilliSeconds:=0
 workMilliSeconds:=0
 state:="work"
-measureTimeStart:=A_Now A_MSec
+measureTimeStart:=GetSystemTimeinMS()
 dataSavedAt:=A_Now
 uiHasBeenMovedToLowerRight:=0
 FormatTime, currentDate, , yyyy-MM-dd
@@ -124,9 +124,9 @@ Measure() {
     ;* Calculate passed ms since last call to Measure()
     ;*****************************************
 
-    now:=A_Now A_MSec
+    now:=GetSystemTimeinMS()
     passedMs:=now-measureTimeStart
-    measureTimeStart:=A_Now A_MSec 	; Reset
+    measureTimeStart:=now 	; Reset
 
     ;*****************************************
     ;* Store
@@ -256,6 +256,24 @@ StringToSeconds(iString){
     return result
 }
 
+GetSystemTimeinMS(){
+
+  /*
+   NOTE: Ignores regional settings, summer time settings and so forth
+   SYSTEMTIME is definition: https://docs.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-systemtime
+    */
+
+    local SYSTEMTIME
+    VarSetCapacity(SYSTEMTIME, 16, 0)
+    DllCall("kernel32.dll\GetSystemTime", "Ptr", &SYSTEMTIME, "Ptr")
+
+    seconds:=NumGet(SYSTEMTIME, 8, "UShort")*3600 + NumGet(SYSTEMTIME, 10, "UShort")*60 + NumGet(SYSTEMTIME, 12, "UShort")
+    ms:=NumGet(SYSTEMTIME, 14, "UShort")
+
+    return seconds * 1000 + ms
+
+}
+
 ;*****************************************
 ;* Keyboard hooks
 ;*****************************************
@@ -295,9 +313,9 @@ return
 ;* Developer stuff
 ;*****************************************
 
-^r::
-    Reload
-Return
+; ^r::
+;     Reload
+; Return
 
 Reload_Button_Click() {
     Reload
@@ -306,4 +324,3 @@ Reload_Button_Click() {
 Test(){
     Msgbox Tripestep, triplestep, walk walk
 }
-
